@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-ivory: #FAF8F5;
+    --color-botanical: #1A2F23;
+    --color-gold: #C5A059;
+    --color-champagne: #F4E8C1;
+  }
+
+  html {
+    scroll-behavior: auto; /* Managed by Lenis */
+  }
+
+  body {
+    background-color: #FAF8F5;
+    color: #1A2F23;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: #F4E8C1;
+    color: #112217;
+  }
+}
+
+/* Custom Typography & Editorial Accents */
+.font-serif-luxury {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+}
+
+.font-display-luxury {
+  font-family: 'Playfair Display', 'Cormorant Garamond', serif;
+}
+
+/* Glassmorphism */
+.glass-panel {
+  background: rgba(253, 251, 247, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(197, 160, 89, 0.2);
+}
+
+.glass-panel-dark {
+  background: rgba(17, 34, 23, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(197, 160, 89, 0.3);
+}
+
+/* Sky Transition Background: Matches final frame of scene.mp4 */
+.sky-background {
+  background: radial-gradient(circle at 50% 25%, #ffffff 0%, #d8ecf8 30%, #a2cbee 65%, #6aa4d8 100%);
+}
+
+/* Procedural Cloud Styles */
+.cloud-layer {
+  position: absolute;
+  pointer-events: none;
+  filter: drop-shadow(0 20px 30px rgba(100, 140, 180, 0.15));
+  will-change: transform, opacity;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF8F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C5A059;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A68038;
+}
+
+/* Soft gold shimmer effect */
+.gold-shimmer {
+  background: linear-gradient(90deg, #9A7836 0%, #D4AF37 50%, #9A7836 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 200% center;
+  }
+}

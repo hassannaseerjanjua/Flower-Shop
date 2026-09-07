@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <circle cx="50" cy="50" r="46" stroke="#1A2F23" stroke-width="1.5" />
+  <circle cx="50" cy="50" r="41" stroke="#C5A059" stroke-width="0.75" stroke-dasharray="2 3" />
+  <!-- Stylized luxury floral petal geometry -->
+  <path d="M50 20 C54 32, 68 46, 80 50 C68 54, 54 68, 50 80 C46 68, 32 54, 20 50 C32 46, 46 32, 50 20 Z" fill="#C5A059" fill-opacity="0.15" stroke="#C5A059" stroke-width="1.2" />
+  <path d="M50 28 C52 38, 62 48, 72 50 C62 52, 52 62, 50 72 C48 62, 38 52, 28 50 C38 48, 48 38, 50 28 Z" fill="#1A2F23" />
+  <circle cx="50" cy="50" r="4" fill="#F4E8C1" />
+</svg>
