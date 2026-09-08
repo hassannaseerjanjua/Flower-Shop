@@ -202,14 +202,14 @@ export default function ScrollIntroExperience({ onExploreClick }) {
   };
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="relative w-full bg-botanical-dark select-none"
       style={{ height: '3600px' }} // Provides the scroll space for the pin
     >
       {/* Pinned Viewport Container */}
-      <div 
-        ref={pinWrapRef} 
+      <div
+        ref={pinWrapRef}
         className="sticky top-0 left-0 w-full h-screen overflow-hidden bg-botanical-dark"
       >
         {/* 1. High-Performance HTML5 Canvas Scrubber (Zero-Lag Apple-style image sequence) */}
@@ -222,7 +222,7 @@ export default function ScrollIntroExperience({ onExploreClick }) {
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/50 via-transparent to-black/30" />
 
         {/* 2. Seamless Sky Hand-off Overlay (fades in as camera exits roof) */}
-        <div 
+        <div
           className="absolute inset-0 w-full h-full pointer-events-none will-change-opacity transition-opacity duration-300"
           style={{ opacity: skyOpacity }}
         >
@@ -230,14 +230,14 @@ export default function ScrollIntroExperience({ onExploreClick }) {
         </div>
 
         {/* 3. Initial Hero Title Overlay (visible at 0% scroll, fades as user starts scrolling) */}
-        <div 
+        <div
           ref={initialTitleRef}
           className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none z-20"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-panel-dark text-champagne/90 text-[10px] tracking-[0.25em] uppercase font-medium mb-4">
+          {/* <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-panel-dark text-champagne/90 text-[10px] tracking-[0.25em] uppercase font-medium mb-4">
             <Sparkles className="w-3.5 h-3.5 text-gold" />
             <span>Interactive Floral Odyssey</span>
-          </div>
+          </div> */}
 
           <h1 className="font-serif-luxury text-5xl sm:text-7xl md:text-8xl text-white font-light tracking-tight drop-shadow-lg">
             Bloom <span className="font-serif italic text-gold">&amp;</span> Co.
@@ -258,10 +258,10 @@ export default function ScrollIntroExperience({ onExploreClick }) {
           <div className="w-20 h-20 sm:w-24 sm:h-24 mb-6 relative flex items-center justify-center">
             <div className="absolute inset-0 rounded-full border border-gold/40 animate-spin" style={{ animationDuration: '40s' }} />
             <div className="absolute inset-1 rounded-full border border-botanical/20" />
-            <img 
-              src="/bloom-logo.svg" 
-              alt="Bloom & Co. Emblem" 
-              className="w-14 h-14 sm:w-16 sm:h-16 filter drop-shadow-md" 
+            <img
+              src="/bloom-logo.svg"
+              alt="Bloom & Co. Emblem"
+              className="w-14 h-14 sm:w-16 sm:h-16 filter drop-shadow-md"
             />
           </div>
 
@@ -282,7 +282,7 @@ export default function ScrollIntroExperience({ onExploreClick }) {
         </div>
 
         {/* 5. Scroll Cue Prompt at Bottom Center */}
-        <div 
+        <div
           ref={promptRef}
           className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none"
         >

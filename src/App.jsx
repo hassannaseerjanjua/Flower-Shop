@@ -48,6 +48,9 @@ export default function App() {
   // Filter State
   const [selectedCategory, setSelectedCategory] = useState('all');
 
+  // Intro State: Controls whether the Navbar is visible (only when intro ends)
+  const [isIntroEnded, setIsIntroEnded] = useState(false);
+
   const lenisRef = useRef(null);
 
   // Sync to localStorage
@@ -67,14 +70,14 @@ export default function App() {
     }
   }, [wishlist]);
 
-  // Lenis Smooth Scroll Setup
+  // Lenis Smooth Scroll Setup (Luxurious Lazy Glide)
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.6,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      wheelMultiplier: 0.9,
-      touchMultiplier: 1.5,
+      wheelMultiplier: 0.8,
+      touchMultiplier: 1.2,
     });
     lenisRef.current = lenis;
 
@@ -91,6 +94,24 @@ export default function App() {
       gsap.ticker.remove(tickerCb);
       lenis.destroy();
     };
+  }, []);
+
+  // Strict Navbar Visibility: ONLY appears once intro has ended and #hero enters viewport
+  useEffect(() => {
+    const handleCheckHeroPosition = () => {
+      const hero = document.querySelector('#hero');
+      if (hero) {
+        const rect = hero.getBoundingClientRect();
+        // If #hero top is at or above the top 100px of viewport, intro has concluded
+        setIsIntroEnded(rect.top <= 100);
+      }
+    };
+
+    window.addEventListener('scroll', handleCheckHeroPosition, { passive: true });
+    // Run once on mount
+    handleCheckHeroPosition();
+
+    return () => window.removeEventListener('scroll', handleCheckHeroPosition);
   }, []);
 
   // Cart Actions
@@ -177,8 +198,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-ivory-100 text-botanical selection:bg-gold-light selection:text-botanical-dark font-sans relative">
       
-      {/* Top Navigation Bar */}
+      {/* Top Navigation Bar (Only appears once the intro concludes) */}
       <Navbar
+        isVisible={isIntroEnded}
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
         wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
@@ -191,6 +213,7 @@ export default function App() {
         {/* 1. Scroll-Driven Cinematic Video Intro (plays in sync with scroll) */}
         <ScrollIntroExperience
           onExploreClick={() => scrollToSection('#hero')}
+          onIntroEndChange={setIsIntroEnded}
         />
 
         {/* 2. Hero Section */}

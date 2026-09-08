@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, ShoppingBag, Menu, X, Play, Sparkles } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu, X, Play } from 'lucide-react';
 
 export default function Navbar({
   cartCount = 0,
@@ -8,17 +8,14 @@ export default function Navbar({
   onOpenWishlist,
   onOpenSearch,
   onReplayIntro,
+  isVisible = false,
 }) {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // If intro has not ended, do NOT render navbar at all
+  if (!isVisible) {
+    return null;
+  }
 
   const navLinks = [
     { name: 'Home', href: '#hero' },
@@ -39,13 +36,7 @@ export default function Navbar({
 
   return (
     <>
-      <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
-          isScrolled
-            ? 'bg-ivory-100/90 backdrop-blur-md shadow-sm border-b border-botanical/5 py-3.5'
-            : 'bg-transparent py-5 sm:py-6'
-        }`}
-      >
+      <header className="fixed top-0 left-0 right-0 z-40 bg-ivory-100/95 backdrop-blur-md shadow-sm border-b border-botanical/5 py-3.5 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Left: Brand Monogram & Name */}
           <a
