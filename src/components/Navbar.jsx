@@ -8,6 +8,7 @@ export default function Navbar({
   onOpenWishlist,
   onOpenSearch,
   onReplayIntro,
+  isVisible = false,
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -19,6 +20,13 @@ export default function Navbar({
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close mobile menu if navbar hides
+  useEffect(() => {
+    if (!isVisible) {
+      setMobileMenuOpen(false);
+    }
+  }, [isVisible]);
 
   const navLinks = [
     { name: 'Home', href: '#hero' },
@@ -40,7 +48,11 @@ export default function Navbar({
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-700 ease-out transform ${
+          isVisible
+            ? 'translate-y-0 opacity-100 pointer-events-auto'
+            : '-translate-y-full opacity-0 pointer-events-none'
+        } ${
           isScrolled
             ? 'bg-ivory-100/90 backdrop-blur-md shadow-sm border-b border-botanical/5 py-3.5'
             : 'bg-transparent py-5 sm:py-6'
