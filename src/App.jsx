@@ -48,9 +48,6 @@ export default function App() {
   // Filter State
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Intro State: Navbar only appears once the intro has concluded
-  const [isIntroEnded, setIsIntroEnded] = useState(false);
-
   const lenisRef = useRef(null);
 
   // Sync to localStorage
@@ -70,14 +67,14 @@ export default function App() {
     }
   }, [wishlist]);
 
-  // Lenis Smooth Scroll Setup (Luxurious Lazy Glide)
+  // Lenis Smooth Scroll Setup
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.6,
+      duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      wheelMultiplier: 0.8,
-      touchMultiplier: 1.2,
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.5,
     });
     lenisRef.current = lenis;
 

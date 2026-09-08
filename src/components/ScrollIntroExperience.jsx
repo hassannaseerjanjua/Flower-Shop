@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ChevronDown, Sparkles, ArrowDown } from 'lucide-react';
+import { ChevronDown, Volume2, VolumeX, Sparkles, ArrowDown } from 'lucide-react';
 import SkyTransition from './SkyTransition';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -14,7 +14,7 @@ const getFrameUrl = (index) => {
   return `/frames/frame_${padded}.webp`;
 };
 
-// High-DPI object-fit: cover canvas rendering
+// Helper for drawing image with object-fit: cover on high-DPI canvas
 function drawCoverImage(ctx, img, canvasWidth, canvasHeight) {
   if (!img || !img.complete || img.naturalWidth === 0) return;
   const imgW = img.naturalWidth;
@@ -29,7 +29,7 @@ function drawCoverImage(ctx, img, canvasWidth, canvasHeight) {
   ctx.drawImage(img, 0, 0, imgW, imgH, offsetX, offsetY, newW, newH);
 }
 
-export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange }) {
+export default function ScrollIntroExperience({ onExploreClick }) {
   const containerRef = useRef(null);
   const pinWrapRef = useRef(null);
   const canvasRef = useRef(null);
@@ -37,80 +37,68 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
   const promptRef = useRef(null);
   const initialTitleRef = useRef(null);
 
+  const [imagesLoaded, setImagesLoaded] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
   // Cached image array
   const imagesRef = useRef([]);
-  // Target frame from scroll vs smoothly interpolated display frame (Lazy Lerping)
-  const targetFrameRef = useRef(0);
-  const smoothFrameRef = useRef(0);
-  const lastDrawnFrameRef = useRef(-1);
+  const currentFrameRef = useRef(0);
 
-  // 1. Lazy Chunked Image Preloading
+  // 1. Preload image sequence into memory for instant, zero-lag canvas scrubbing
   useEffect(() => {
-    const images = new Array(TOTAL_FRAMES);
+    let loadedCount = 0;
+    const images = [];
 
-    // Immediate Priority: Load first 15 frames right away
-    for (let i = 0; i < Math.min(15, TOTAL_FRAMES); i++) {
-      const img = new Image();
-      img.src = getFrameUrl(i);
-      if (i === 0) {
-        img.onload = () => {
-          if (canvasRef.current) {
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            drawCoverImage(ctx, img, canvas.width, canvas.height);
-            lastDrawnFrameRef.current = 0;
-          }
-        };
-      }
-      images[i] = img;
-    }
-
-    // Lazy load remaining frames in small batches so main thread remains 100% fluid
-    let nextIndex = 15;
-    const loadBatch = () => {
-      if (nextIndex >= TOTAL_FRAMES) return;
-      const batchEnd = Math.min(nextIndex + 15, TOTAL_FRAMES);
-      for (let j = nextIndex; j < batchEnd; j++) {
-        const img = new Image();
-        img.src = getFrameUrl(j);
-        images[j] = img;
-      }
-      nextIndex = batchEnd;
-      if (nextIndex < TOTAL_FRAMES) {
-        setTimeout(loadBatch, 60);
+    // Preload first frame immediately
+    const firstImg = new Image();
+    firstImg.src = getFrameUrl(0);
+    firstImg.onload = () => {
+      // Draw first frame right away so viewport is instantly populated
+      if (canvasRef.current) {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drawCoverImage(ctx, firstImg, canvas.width, canvas.height);
       }
     };
+    images.push(firstImg);
 
-    const timer = setTimeout(loadBatch, 100);
+    // Preload remaining frames in parallel
+    for (let i = 1; i < TOTAL_FRAMES; i++) {
+      const img = new Image();
+      img.src = getFrameUrl(i);
+      img.onload = () => {
+        loadedCount++;
+        if (loadedCount >= Math.min(20, TOTAL_FRAMES - 1)) {
+          setImagesLoaded(true);
+        }
+      };
+      images.push(img);
+    }
+
     imagesRef.current = images;
 
     return () => {
-      clearTimeout(timer);
       imagesRef.current = [];
     };
   }, []);
 
-  // 2. Render helper with nearest-frame fallback
-  const drawFrameIndex = useCallback((index) => {
+  // 2. Render function for drawing the active frame
+  const renderFrame = useCallback((index) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const images = imagesRef.current;
-    if (!images || images.length === 0) return;
+    const img = imagesRef.current[index];
 
-    const img = images[index];
-    if (img && img.complete && img.naturalWidth > 0) {
+    if (img && img.complete) {
       drawCoverImage(ctx, img, canvas.width, canvas.height);
-      lastDrawnFrameRef.current = index;
+      currentFrameRef.current = index;
     } else {
-      // Look for nearest loaded neighbor frame to avoid any flicker
-      for (let offset = 1; offset <= 15; offset++) {
-        const prev = images[Math.max(0, index - offset)];
-        if (prev && prev.complete && prev.naturalWidth > 0) {
+      // Fallback: draw nearest loaded frame to prevent black flash
+      for (let offset = 1; offset <= 10; offset++) {
+        const prev = imagesRef.current[Math.max(0, index - offset)];
+        if (prev && prev.complete) {
           drawCoverImage(ctx, prev, canvas.width, canvas.height);
           break;
         }
@@ -118,51 +106,23 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
     }
   }, []);
 
-  // 3. Lazy Frame Interpolation Loop (rAF Lerp)
-  // Glides smoothly towards target frame with luxurious inertia
-  useEffect(() => {
-    let animId;
-
-    const lazyRenderLoop = () => {
-      const diff = targetFrameRef.current - smoothFrameRef.current;
-      
-      // Lazy lerp coefficient (0.12 = smooth cinematic crane inertia)
-      if (Math.abs(diff) > 0.05) {
-        smoothFrameRef.current += diff * 0.12;
-        const frameToDraw = Math.min(
-          TOTAL_FRAMES - 1,
-          Math.max(0, Math.round(smoothFrameRef.current))
-        );
-
-        if (frameToDraw !== lastDrawnFrameRef.current) {
-          drawFrameIndex(frameToDraw);
-        }
-      }
-
-      animId = requestAnimationFrame(lazyRenderLoop);
-    };
-
-    animId = requestAnimationFrame(lazyRenderLoop);
-    return () => cancelAnimationFrame(animId);
-  }, [drawFrameIndex]);
-
-  // 4. Handle window resize
+  // 3. Handle window resize for canvas
   useEffect(() => {
     const handleResize = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      drawFrameIndex(Math.round(smoothFrameRef.current));
+      renderFrame(currentFrameRef.current);
     };
 
     window.addEventListener('resize', handleResize, { passive: true });
     handleResize();
 
     return () => window.removeEventListener('resize', handleResize);
-  }, [drawFrameIndex]);
+  }, [renderFrame]);
 
-  // 5. GSAP ScrollTrigger with Lazy Momentum Scrubbing
+  // 4. GSAP ScrollTrigger Setup
   useEffect(() => {
     const container = containerRef.current;
     const pinWrap = pinWrapRef.current;
@@ -172,38 +132,45 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
       ScrollTrigger.create({
         trigger: container,
         start: 'top top',
-        end: '+=3000', // Generous lazy travel distance
+        end: '+=2600', // 2600px of responsive, zero-lag scroll distance
         pin: pinWrap,
-        scrub: 1.2, // Lazy 1.2s smooth momentum damping
+        scrub: true,
         anticipatePin: 1,
         onUpdate: (self) => {
           const p = self.progress;
           setScrollProgress(p);
 
-          // Update target frame for lazy lerp loop
-          targetFrameRef.current = p * (TOTAL_FRAMES - 1);
+          // Calculate frame index based on scroll progress (0 to 140)
+          const targetIndex = Math.min(
+            TOTAL_FRAMES - 1,
+            Math.max(0, Math.round(p * (TOTAL_FRAMES - 1)))
+          );
 
-          // Initial Title & Scroll Prompt fade out gently (0% to 18% scroll)
+          if (targetIndex !== currentFrameRef.current) {
+            renderFrame(targetIndex);
+          }
+
+          // Initial Title & Scroll Prompt fade out quickly (0% to 15% scroll)
           if (initialTitleRef.current) {
-            const titleOpacity = Math.max(0, 1 - p * 5.5);
+            const titleOpacity = Math.max(0, 1 - p * 6);
             initialTitleRef.current.style.opacity = titleOpacity;
-            initialTitleRef.current.style.transform = `translateY(${p * -45}px)`;
+            initialTitleRef.current.style.transform = `translateY(${p * -40}px)`;
           }
 
           if (promptRef.current) {
-            const promptOpacity = Math.max(0, 1 - p * 7);
+            const promptOpacity = Math.max(0, 1 - p * 8);
             promptRef.current.style.opacity = promptOpacity;
           }
 
-          // Logo Reveal entrance on sky (66% to 88% scroll)
+          // Logo Reveal entrance on sky (65% to 88% scroll)
           // Exact required specs: opacity: 0 -> 1, scale: 0.85 -> 1, y: 40px -> 0
           if (logoWrapRef.current) {
-            if (p < 0.66) {
+            if (p < 0.65) {
               logoWrapRef.current.style.opacity = '0';
               logoWrapRef.current.style.transform = 'translateY(40px) scale(0.85)';
-            } else if (p >= 0.66 && p <= 0.88) {
-              const logoT = (p - 0.66) / 0.22; // 0 to 1
-              // Cinematic power3.out lazy easing curve
+            } else if (p >= 0.65 && p <= 0.88) {
+              const logoT = (p - 0.65) / 0.23; // 0 to 1
+              // Cinematic power3.out easing curve
               const eased = 1 - Math.pow(1 - logoT, 3);
               const curScale = 0.85 + eased * 0.15;
               const curY = 40 * (1 - eased);
@@ -216,19 +183,15 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
               logoWrapRef.current.style.transform = 'translateY(0px) scale(1)';
             }
           }
-
-          // Notify whether intro flight has concluded (at or beyond 88% scroll)
-          if (onIntroEndChange) {
-            onIntroEndChange(p >= 0.88);
-          }
         },
       });
     }, container);
 
     return () => ctx.revert();
-  }, [onIntroEndChange]);
+  }, [renderFrame]);
 
-  // Sky overlay: emerges as camera tilts through roof into sky (approx 68% to 82% scroll)
+  // Calculate sky overlay opacity:
+  // Starts appearing around frame 95-105 (approx 68% scroll), fully luminous by 82%
   const skyOpacity = Math.max(0, Math.min(1, (scrollProgress - 0.68) / 0.16));
 
   const handleSkipIntro = () => {
@@ -242,23 +205,23 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
     <div 
       ref={containerRef} 
       className="relative w-full bg-botanical-dark select-none"
-      style={{ height: '4000px' }} // Ample room for lazy, weighted scroll
+      style={{ height: '3600px' }} // Provides the scroll space for the pin
     >
       {/* Pinned Viewport Container */}
       <div 
         ref={pinWrapRef} 
         className="sticky top-0 left-0 w-full h-screen overflow-hidden bg-botanical-dark"
       >
-        {/* 1. High-Performance HTML5 Canvas with Lazy Frame Lerping */}
+        {/* 1. High-Performance HTML5 Canvas Scrubber (Zero-Lag Apple-style image sequence) */}
         <canvas
           ref={canvasRef}
           className="w-full h-full object-cover block will-change-transform"
         />
 
-        {/* Cinematic Atmospheric Vignette */}
+        {/* Cinematic Vignette */}
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/50 via-transparent to-black/30" />
 
-        {/* 2. Seamless Sky Hand-off Overlay */}
+        {/* 2. Seamless Sky Hand-off Overlay (fades in as camera exits roof) */}
         <div 
           className="absolute inset-0 w-full h-full pointer-events-none will-change-opacity transition-opacity duration-300"
           style={{ opacity: skyOpacity }}
@@ -266,7 +229,7 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
           <SkyTransition opacity={1} showSunBloom={true} />
         </div>
 
-        {/* 3. Initial Hero Title Overlay */}
+        {/* 3. Initial Hero Title Overlay (visible at 0% scroll, fades as user starts scrolling) */}
         <div 
           ref={initialTitleRef}
           className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none z-20"
@@ -285,7 +248,7 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
           </p>
         </div>
 
-        {/* 4. Centered Logo Reveal (emerges on sky) */}
+        {/* 4. Centered Logo Reveal (animates into center when sky fills viewport) */}
         <div
           ref={logoWrapRef}
           style={{ opacity: 0, transform: 'translateY(40px) scale(0.85)' }}
@@ -302,7 +265,7 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
             />
           </div>
 
-          {/* Brand Typography */}
+          {/* Typography */}
           <h2 className="font-serif-luxury text-5xl sm:text-7xl md:text-8xl tracking-tight text-botanical-dark font-light leading-none mb-3">
             Bloom <span className="font-serif italic font-normal text-gold">&amp;</span> Co.
           </h2>
@@ -341,14 +304,6 @@ export default function ScrollIntroExperience({ onExploreClick, onIntroEndChange
             <span>Skip to Shop</span>
             <ArrowDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
           </button>
-        </div>
-
-        {/* 7. Subtle Scroll Progress Bar (Top) */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/10 z-30">
-          <div 
-            className="h-full bg-gold transition-all duration-150"
-            style={{ width: `${Math.min(100, scrollProgress * 100)}%` }}
-          />
         </div>
 
       </div>
