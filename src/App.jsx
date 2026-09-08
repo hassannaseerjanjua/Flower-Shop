@@ -3,7 +3,7 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import IntroExperience from './components/IntroExperience';
+import ScrollIntroExperience from './components/ScrollIntroExperience';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import CategorySection from './components/CategorySection';
@@ -20,9 +20,6 @@ import SearchModal from './components/SearchModal';
 gsap.registerPlugin(ScrollTrigger);
 
 export default function App() {
-  const [showIntro, setShowIntro] = useState(true);
-  const [introKey, setIntroKey] = useState(0);
-
   // Cart & Wishlist State
   const [cart, setCart] = useState(() => {
     try {
@@ -144,11 +141,13 @@ export default function App() {
     setWishlist((prev) => prev.filter((item) => item.id !== product.id));
   };
 
-  // Replay Intro
+  // Replay Intro by smoothly scrolling back to the beginning of the journey
   const handleReplayIntro = () => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setIntroKey((prev) => prev + 1);
-    setShowIntro(true);
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { duration: 1.6 });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   // Category Selection & Scroll
@@ -178,15 +177,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-ivory-100 text-botanical selection:bg-gold-light selection:text-botanical-dark font-sans relative">
       
-      {/* 1. Cinematic Video-to-Sky Intro Journey */}
-      {showIntro && (
-        <IntroExperience
-          key={introKey}
-          onComplete={() => setShowIntro(false)}
-        />
-      )}
-
-      {/* 2. Top Navigation Bar */}
+      {/* Top Navigation Bar */}
       <Navbar
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
         wishlistCount={wishlist.length}
@@ -196,13 +187,19 @@ export default function App() {
         onReplayIntro={handleReplayIntro}
       />
 
-      {/* 3. Main Storefront Pages & Sections */}
       <main className="relative">
+        {/* 1. Scroll-Driven Cinematic Video Intro (plays in sync with scroll) */}
+        <ScrollIntroExperience
+          onExploreClick={() => scrollToSection('#hero')}
+        />
+
+        {/* 2. Hero Section */}
         <Hero
           onShopClick={() => scrollToSection('#shop-products')}
           onExploreClick={() => scrollToSection('#shop-categories')}
         />
 
+        {/* 3. Category Section */}
         <CategorySection
           onSelectCategory={handleSelectCategory}
         />
